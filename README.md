@@ -1,4 +1,4 @@
-# create-sjmcl-extension
+# Create-SJMCL-Extension CLI
 
 `create-sjmcl-extension` scaffolds a bundled SJMCL extension project.
 

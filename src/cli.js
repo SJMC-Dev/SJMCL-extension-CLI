@@ -1,7 +1,8 @@
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
-import { printWelcomeBanner } from "./banner.js";
+import { getCliVersion, printWelcomeBannerWithUpdate } from "./banner.js";
 import { scaffoldProject } from "./scaffold.js";
+import { checkForUpdates } from "./update-check.js";
 
 function showHelp() {
   console.log(`create-sjmcl-extension
@@ -21,7 +22,8 @@ export async function runCli(argv) {
     return;
   }
 
-  printWelcomeBanner(output);
+  const latestVersion = await checkForUpdates(getCliVersion());
+  printWelcomeBannerWithUpdate(output, latestVersion);
 
   const projectDirectoryArg = argv.find((value) => !value.startsWith("-"));
   const rl = createInterface({ input, output });

@@ -4,6 +4,8 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  rmSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import os from "node:os";
@@ -14,24 +16,51 @@ import semver from "semver";
 const IDENTIFIER_PATTERN = /^[a-z][a-z0-9_-]*(\.[a-z][a-z0-9_-]*)+$/;
 const TEMPLATE_DIR = new URL("../templates/project/", import.meta.url);
 const TEMPLATE_DIR_PATH = fileURLToPath(TEMPLATE_DIR);
+const RESET = "\x1b[0m";
+const BOLD = "\x1b[1m";
+const BLUE = "\x1b[38;2;113;175;255m";
+const WHITE = "\x1b[38;2;255;255;255m";
 
 function normalizePathToPosix(value) {
   return value.replace(/\\/g, "/");
 }
 
-function toPromptLine(label, defaultValue) {
-  if (!defaultValue) {
-    return `${label}: `;
+function supportsColor(stream) {
+  return (
+    Boolean(stream?.isTTY) &&
+    process.env.NO_COLOR === undefined &&
+    process.env.TERM !== "dumb"
+  );
+}
+
+function stylePrompt(text, color) {
+  return `${BOLD}${color}${text}${RESET}`;
+}
+
+function toPromptLine(label, defaultValue, stream) {
+  if (!supportsColor(stream)) {
+    if (!defaultValue) {
+      return `* ${label}: `;
+    }
+
+    return `* ${label} (${defaultValue}): `;
   }
 
-  return `${label} (${defaultValue}): `;
+  const styledLabel = stylePrompt(`* ${label}`, BLUE);
+  if (!defaultValue) {
+    return `${styledLabel}: `;
+  }
+
+  return `${styledLabel} (${stylePrompt(defaultValue, WHITE)}): `;
 }
 
 async function promptInput(rl, label, options = {}) {
   const { defaultValue = "", validate } = options;
 
   while (true) {
-    const answer = await rl.question(toPromptLine(label, defaultValue));
+    const answer = await rl.question(
+      toPromptLine(label, defaultValue, rl.output)
+    );
     const value = answer.trim() || defaultValue;
 
     if (validate) {
@@ -43,6 +72,23 @@ async function promptInput(rl, label, options = {}) {
     }
 
     return value;
+  }
+}
+
+async function promptConfirm(rl, label) {
+  while (true) {
+    const answer = await rl.question(`${label} (y/n): `);
+    const value = answer.trim().toLowerCase();
+
+    if (value === "y" || value === "yes") {
+      return true;
+    }
+
+    if (value === "n" || value === "no") {
+      return false;
+    }
+
+    console.error("Please answer y or n.");
   }
 }
 
@@ -154,16 +200,40 @@ function validateFrontendEntry(value) {
   return "";
 }
 
-function ensureWritableTarget(targetDirectory) {
-  if (!existsSync(targetDirectory)) {
-    return;
-  }
+async function resolveTargetDirectory(rl, cwd, projectDirectoryArg) {
+  let defaultDirectory = projectDirectoryArg || "my-sjmcl-extension";
 
-  const entries = readdirSync(targetDirectory);
-  if (entries.length > 0) {
-    throw new Error(
-      `Target directory is not empty: ${path.resolve(targetDirectory)}`
+  while (true) {
+    const directoryInput =
+      projectDirectoryArg && defaultDirectory === projectDirectoryArg
+        ? projectDirectoryArg
+        : await promptInput(rl, "Project directory", {
+            defaultValue: defaultDirectory,
+            validate: validateProjectDirectory,
+          });
+    const targetDirectory = path.resolve(cwd, directoryInput);
+
+    if (!existsSync(targetDirectory)) {
+      return targetDirectory;
+    }
+
+    const stats = statSync(targetDirectory);
+    if (stats.isDirectory() && readdirSync(targetDirectory).length === 0) {
+      return targetDirectory;
+    }
+
+    const shouldOverwrite = await promptConfirm(
+      rl,
+      `Target ${path.resolve(targetDirectory)} already exists. Overwrite`
     );
+
+    if (shouldOverwrite) {
+      rmSync(targetDirectory, { recursive: true, force: true });
+      return targetDirectory;
+    }
+
+    projectDirectoryArg = "";
+    defaultDirectory = directoryInput;
   }
 }
 
@@ -265,15 +335,11 @@ function printNextSteps(targetDirectory, cwd) {
 }
 
 export async function scaffoldProject({ projectDirectoryArg, cwd, rl }) {
-  const initialDirectory =
-    projectDirectoryArg ||
-    (await promptInput(rl, "Project directory", {
-      defaultValue: "my-sjmcl-extension",
-      validate: validateProjectDirectory,
-    }));
-  const targetDirectory = path.resolve(cwd, initialDirectory);
-
-  ensureWritableTarget(targetDirectory);
+  const targetDirectory = await resolveTargetDirectory(
+    rl,
+    cwd,
+    projectDirectoryArg
+  );
 
   const directoryBaseName = toDirectoryBaseName(targetDirectory);
   const identifierSegment = toIdentifierSegment(directoryBaseName);

@@ -4,6 +4,7 @@ import { stdout } from "node:process";
 const RESET = "\x1b[0m";
 const BOLD = "\x1b[1m";
 const WHITE = [255, 255, 255];
+const YELLOW = [255, 215, 64];
 const TITLE = "Create-SJMCL-Extension CLI";
 const GAP = "    ";
 const ANSI_PATTERN = /\x1b\[[0-9;]*m/g;
@@ -46,6 +47,10 @@ function getVersion() {
   return packageJson.version;
 }
 
+export function getCliVersion() {
+  return getVersion();
+}
+
 function colorize(text, [r, g, b]) {
   return `\x1b[38;2;${r};${g};${b}m${text}${RESET}`;
 }
@@ -62,32 +67,50 @@ function centerText(text, width) {
   return `${" ".repeat(left)}${content}${" ".repeat(right)}`;
 }
 
-function buildTextBlockLines(version, useColor) {
-  const textWidth = Math.max(TITLE.length, version.length, 28);
+function buildVersionLine(version, latestVersion, useColor) {
+  const suffix = latestVersion ? ` (🌟New: ${latestVersion}!)` : "";
+
+  if (!useColor) {
+    return `${version}${suffix}`;
+  }
+
+  return latestVersion
+    ? `${colorize(version, WHITE)}${colorize(suffix, YELLOW)}`
+    : colorize(version, WHITE);
+}
+
+function buildTextBlockLines(version, latestVersion, useColor) {
+  const rawVersionLine = `${version}${latestVersion ? ` (🌟New: ${latestVersion}!)` : ""}`;
+  const textWidth = Math.max(TITLE.length, rawVersionLine.length, 28);
   const lineCount = ICON_COLOR_LINES.length;
   const titleRow = Math.floor(lineCount / 2) - 1;
   const versionRow = titleRow + 1;
   const lines = Array.from({ length: lineCount }, () => " ".repeat(textWidth));
 
   const centeredTitle = centerText(TITLE, textWidth);
-  const centeredVersion = centerText(version, textWidth);
+  const centeredVersion = centerText(rawVersionLine, textWidth);
 
   lines[titleRow] = useColor
     ? `${BOLD}${colorize(centeredTitle, WHITE)}${RESET}`
     : centeredTitle;
-  lines[versionRow] = useColor
-    ? `${BOLD}${colorize(centeredVersion, WHITE)}${RESET}`
-    : centeredVersion;
+  if (useColor) {
+    const leftPadding = centeredVersion.match(/^ */)?.[0] || "";
+    const rightPadding = centeredVersion.match(/ *$/)?.[0] || "";
+    lines[versionRow] =
+      `${leftPadding}${BOLD}${buildVersionLine(version, latestVersion, true)}${RESET}${rightPadding}`;
+  } else {
+    lines[versionRow] = centeredVersion;
+  }
 
   return lines;
 }
 
-function buildBanner(useColor) {
+function buildBanner(useColor, latestVersion) {
   const version = getVersion();
   const iconLines = useColor
     ? ICON_COLOR_LINES
     : ICON_COLOR_LINES.map((line) => stripAnsi(line));
-  const textLines = buildTextBlockLines(version, useColor);
+  const textLines = buildTextBlockLines(version, latestVersion, useColor);
   const contentLines = iconLines.map(
     (line, index) => `${line}${GAP}${textLines[index]}`
   );
@@ -108,4 +131,8 @@ function buildBanner(useColor) {
 
 export function printWelcomeBanner(stream = stdout) {
   stream.write(buildBanner(supportsColor(stream)));
+}
+
+export function printWelcomeBannerWithUpdate(stream = stdout, latestVersion = null) {
+  stream.write(buildBanner(supportsColor(stream), latestVersion));
 }
