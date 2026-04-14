@@ -1,0 +1,28 @@
+import { createExamplePage } from "./pages/example-page";
+import { createSettingsPage } from "./pages/settings-page";
+import { defineExtension } from "./runtime";
+import { createHomeWidget } from "./widgets/home-widget";
+
+defineExtension((api) => ({
+  homeWidget: {
+    title: __NAME_JSON__,
+    description: __DESCRIPTION_JSON__,
+    defaultWidth: 360,
+    minWidth: 300,
+    Component: createHomeWidget(api),
+  },
+  settingsPage: {
+    Component: createSettingsPage(api),
+  },
+  pages: [
+    {
+      routePath: "example",
+      Component: createExamplePage(api, false),
+    },
+    {
+      routePath: "example-standalone",
+      isStandAlone: true,
+      Component: createExamplePage(api, true),
+    },
+  ],
+}));

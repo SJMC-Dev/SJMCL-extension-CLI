@@ -1,0 +1,32 @@
+{
+  "name": "create-sjmcl-extension",
+  "version": "0.1.0",
+  "description": "Create a bundled SJMCL extension project.",
+  "type": "module",
+  "bin": {
+    "create-sjmcl-extension": "./bin/create-sjmcl-extension.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "templates",
+    "LICENSE",
+    "README.md"
+  ],
+  "keywords": [
+    "sjmcl",
+    "extension",
+    "scaffold",
+    "create"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.18.0"
+  },
+  "scripts": {
+    "start": "node ./bin/create-sjmcl-extension.js"
+  },
+  "dependencies": {
+    "semver": "^7.7.2"
+  }
+}
