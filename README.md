@@ -4,10 +4,16 @@
 
 SJMCL currently loads a single frontend entry file from `sjmcl.ext.json`, while real extensions often want a `src/` tree and npm dependencies. This package bridges that gap by generating a small build pipeline around the SJMCL extension format.
 
+## Install
+
+```bash
+npm install -g create-sjmcl-extension@latest
+```
+
 ## Usage
 
 ```bash
-npx create-sjmcl-extension my-extension
+npx create-sjmcl-extension
 ```
 
 ## Generated Project
