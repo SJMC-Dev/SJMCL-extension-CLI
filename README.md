@@ -7,12 +7,6 @@ SJMCL currently loads a single frontend entry file from `sjmcl.ext.json`, while 
 ## Usage
 
 ```bash
-npm create sjmcl-extension@latest my-extension
-```
-
-You can also run:
-
-```bash
 npx create-sjmcl-extension my-extension
 ```
 
