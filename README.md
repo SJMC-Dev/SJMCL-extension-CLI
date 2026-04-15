@@ -21,7 +21,7 @@ npx create-sjmcl-extension my-extension
 The generated project includes:
 
 - `npm run build`
-  Bundles `src/index.ts` into the manifest's `frontend.entry`, copies extension files into `dist/<identifier>/`, and creates `dist/<identifier>-<version>.sjmclx`.
+  Bundles `src/index.ts` or `src/index.tsx` into the manifest's `frontend.entry`, transforms JSX/TSX into `React.createElement(...)`, copies extension files into `dist/<identifier>/`, and creates `dist/<identifier>-<version>.sjmclx`.
 - `npm run bump -- <semver>`
   Sets both `package.json` and `sjmcl.ext.json` to the exact version you provide.
   

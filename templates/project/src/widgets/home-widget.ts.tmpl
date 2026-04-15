@@ -26,7 +26,7 @@ export function createHomeWidget(api: ExtensionFactoryApi) {
         Text,
         { fontSize: "xs", className: "secondary-text" },
         "Current player: ",
-        hostData.selectedPlayer?.name || "None"
+        (hostData.selectedPlayer && hostData.selectedPlayer.name) || "None"
       ),
       React.createElement(
         HStack,
@@ -35,7 +35,7 @@ export function createHomeWidget(api: ExtensionFactoryApi) {
           Button,
           {
             size: "sm",
-            onClick() {
+            onClick: function () {
               host.actions.navigate("/extension/" + api.identifier + "/example");
             },
           },
@@ -46,7 +46,7 @@ export function createHomeWidget(api: ExtensionFactoryApi) {
           {
             size: "sm",
             variant: "outline",
-            onClick() {
+            onClick: function () {
               host.actions.openWindow(
                 "/standalone/extension/" +
                   api.identifier +
