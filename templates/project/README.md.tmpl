@@ -21,13 +21,11 @@ You can split the implementation across as many local files as you want under `s
 ## Project Layout
 
 - `src/index.ts`
-  Entry point for your extension source tree.
+  Entry point for your extension source tree. Registers the factory with the SJMCL host.
 - `src/widgets/`
   Home widget components.
 - `src/pages/`
   Example settings page, custom page, and standalone custom page.
-- `src/runtime.ts`
-  Registers the bundled factory with the SJMCL host.
 - `src/types/sjmcl.ts`
   Minimal local typings for the injected SJMCL extension API.
 
