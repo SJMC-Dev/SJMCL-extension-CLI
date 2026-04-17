@@ -12,7 +12,7 @@ export function createExamplePage(
     const pageKind = standalone ? "standalone" : "embedded";
 
     return (
-      <VStack align="stretch" spacing={4}>
+      <VStack align="stretch" spacing={4} className="content-full-y">
         <HStack justify="space-between" align="center">
           <Text fontSize="lg" fontWeight="bold">
             Example {standalone ? "Standalone" : "Custom"} Page
