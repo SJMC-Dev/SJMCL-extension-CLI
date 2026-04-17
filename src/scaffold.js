@@ -11,13 +11,12 @@ import {
 import * as clack from "@clack/prompts";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import semver from "semver";
 import { renderBuildScriptTemplate } from "./template-build/render-build-script.js";
+import { getTemplateProjectPath } from "./template-files.js";
 
 const IDENTIFIER_PATTERN = /^[a-z][a-z0-9_-]*(\.[a-z][a-z0-9_-]*)+$/;
-const TEMPLATE_DIR = new URL("../templates/project/", import.meta.url);
-const TEMPLATE_DIR_PATH = fileURLToPath(TEMPLATE_DIR);
+const TEMPLATE_DIR_PATH = getTemplateProjectPath();
 
 function normalizePathToPosix(value) {
   return value.replace(/\\/g, "/");

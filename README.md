@@ -16,12 +16,22 @@ npx create-sjmcl-extension
 
 ## CLI Options
 
-| Option | Value | Default | Description |
+Base command: `create-sjmcl-extension`
+
+| Command | Value | Default | Description |
 | --- | --- | --- | --- |
-| `project-directory` | path | `my-sjmcl-extension` | Target directory for the generated project. |
-| `-h`, `--help` | none | off | Show the CLI help screen. |
+| `[project-directory]` | path | `my-sjmcl-extension` | Scaffold a new extension project. |
+| `sync-types [project-directory]` | path | current directory | Regenerate only `src/types/host.ts` in an existing project from the latest scaffold template. |
+| `--help` | none | off | Show the CLI help screen. |
 
 It will interactively prompt for the new extenion's metadata.
+
+```bash
+npx create-sjmcl-extension
+npx create-sjmcl-extension my-extension
+npx create-sjmcl-extension sync-types .
+npx create-sjmcl-extension sync-types ./existing-extension
+```
 
 ## Generated Project
 
