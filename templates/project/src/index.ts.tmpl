@@ -1,8 +1,9 @@
+import type { ExtensionFactory, ExtensionFactoryApi } from "./types/sjmcl";
 import { createExamplePage } from "./pages/example-page";
 import { createSettingsPage } from "./pages/settings-page";
 import { createHomeWidget } from "./widgets/home-widget";
 
-(function registerExampleExtension(factory) {
+(function registerExampleExtension(factory: ExtensionFactory) {
   const token = document.currentScript?.dataset?.extensionToken || "";
 
   if (!token) {
@@ -14,7 +15,7 @@ import { createHomeWidget } from "./widgets/home-widget";
   }
 
   window.registerExtension(factory, token);
-})(function createExtension(api) {
+})(function createExtension(api: ExtensionFactoryApi) {
   return {
     homeWidget: {
       title: __NAME_JSON__,
