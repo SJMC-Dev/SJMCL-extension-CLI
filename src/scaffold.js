@@ -8,88 +8,56 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
+import * as clack from "@clack/prompts";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import semver from "semver";
+import { renderBuildScriptTemplate } from "./template-build/render-build-script.js";
 
 const IDENTIFIER_PATTERN = /^[a-z][a-z0-9_-]*(\.[a-z][a-z0-9_-]*)+$/;
 const TEMPLATE_DIR = new URL("../templates/project/", import.meta.url);
 const TEMPLATE_DIR_PATH = fileURLToPath(TEMPLATE_DIR);
-const RESET = "\x1b[0m";
-const BOLD = "\x1b[1m";
-const BLUE = "\x1b[38;2;113;175;255m";
-const WHITE = "\x1b[38;2;255;255;255m";
 
 function normalizePathToPosix(value) {
   return value.replace(/\\/g, "/");
 }
 
-function supportsColor(stream) {
-  return (
-    Boolean(stream?.isTTY) &&
-    process.env.NO_COLOR === undefined &&
-    process.env.TERM !== "dumb"
-  );
-}
-
-function stylePrompt(text, color) {
-  return `${BOLD}${color}${text}${RESET}`;
-}
-
-function toPromptLine(label, defaultValue, stream) {
-  if (!supportsColor(stream)) {
-    if (!defaultValue) {
-      return `* ${label}: `;
+function createPromptAdapter() {
+  function unwrapPromptResult(result) {
+    if (!clack.isCancel(result)) {
+      return result;
     }
 
-    return `* ${label} (${defaultValue}): `;
+    clack.cancel("Operation cancelled.");
+    process.exit(0);
   }
 
-  const styledLabel = stylePrompt(`* ${label}`, BLUE);
-  if (!defaultValue) {
-    return `${styledLabel}: `;
-  }
+  return {
+    async text(label, options = {}) {
+      const { defaultValue = "", placeholder, validate } = options;
+      const result = await clack.text({
+        message: label,
+        defaultValue,
+        placeholder: placeholder || defaultValue || undefined,
+        validate,
+      });
 
-  return `${styledLabel} (${stylePrompt(defaultValue, WHITE)}): `;
+      return unwrapPromptResult(result);
+    },
+    async confirm(label, options = {}) {
+      const result = await clack.confirm({
+        message: label,
+        initialValue: options.initialValue ?? false,
+      });
+
+      return unwrapPromptResult(result);
+    },
+  };
 }
 
-async function promptInput(rl, label, options = {}) {
-  const { defaultValue = "", validate } = options;
-
-  while (true) {
-    const answer = await rl.question(
-      toPromptLine(label, defaultValue, rl.output)
-    );
-    const value = answer.trim() || defaultValue;
-
-    if (validate) {
-      const validationError = validate(value);
-      if (validationError) {
-        console.error(validationError);
-        continue;
-      }
-    }
-
-    return value;
-  }
-}
-
-async function promptConfirm(rl, label) {
-  while (true) {
-    const answer = await rl.question(`${label} (y/n): `);
-    const value = answer.trim().toLowerCase();
-
-    if (value === "y" || value === "yes") {
-      return true;
-    }
-
-    if (value === "n" || value === "no") {
-      return false;
-    }
-
-    console.error("Please answer y or n.");
-  }
+function getDefaultAuthor() {
+  return process.env.npm_config_init_author_name || os.userInfo().username;
 }
 
 function toDirectoryBaseName(targetDirectory) {
@@ -168,8 +136,12 @@ function validateRequiredText(fieldName) {
   };
 }
 
-function validateSemver(fieldName) {
+function validateOptionalSemver(fieldName) {
   return (value) => {
+    if (!value.trim()) {
+      return "";
+    }
+
     if (!semver.valid(value)) {
       return `${fieldName} must be a valid semantic version.`;
     }
@@ -200,14 +172,22 @@ function validateFrontendEntry(value) {
   return "";
 }
 
-async function resolveTargetDirectory(rl, cwd, projectDirectoryArg) {
+function buildOptionalJsonField(fieldName, value) {
+  if (!value) {
+    return "";
+  }
+
+  return `,\n  "${fieldName}": ${JSON.stringify(value)}`;
+}
+
+async function resolveTargetDirectory(prompt, cwd, projectDirectoryArg) {
   let defaultDirectory = projectDirectoryArg || "my-sjmcl-extension";
 
   while (true) {
     const directoryInput =
       projectDirectoryArg && defaultDirectory === projectDirectoryArg
         ? projectDirectoryArg
-        : await promptInput(rl, "Project directory", {
+        : await prompt.text("Project directory", {
             defaultValue: defaultDirectory,
             validate: validateProjectDirectory,
           });
@@ -222,8 +202,7 @@ async function resolveTargetDirectory(rl, cwd, projectDirectoryArg) {
       return targetDirectory;
     }
 
-    const shouldOverwrite = await promptConfirm(
-      rl,
+    const shouldOverwrite = await prompt.confirm(
       `Target ${path.resolve(targetDirectory)} already exists. Overwrite`
     );
 
@@ -272,45 +251,11 @@ function copyTemplateTree(templateDirectory, targetDirectory, replacements) {
   }
 }
 
-function writeJson(filePath, value) {
-  writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`);
-}
-
-function getDefaultAuthor() {
-  return process.env.npm_config_init_author_name || os.userInfo().username;
-}
-
-function buildPackageJson(packageName, version, extensionName) {
-  return {
-    name: packageName,
-    private: true,
-    version,
-    description: `${extensionName} SJMCL extension project.`,
-    type: "module",
-    scripts: {
-      build: "node ./scripts/build.mjs",
-      bump: "node ./scripts/bump.mjs",
-    },
-    devDependencies: {
-      esbuild: "^0.25.3",
-      fflate: "^0.8.2",
-      semver: "^7.7.2",
-    },
-  };
-}
-
-function buildManifest(answers) {
-  return {
-    identifier: answers.identifier,
-    name: answers.name,
-    description: answers.description,
-    author: answers.author,
-    version: answers.version,
-    minimalLauncherVersion: answers.minimalLauncherVersion,
-    frontend: {
-      entry: answers.frontendEntry,
-    },
-  };
+async function writeGeneratedTemplateFiles(targetDirectory) {
+  writeFileSync(
+    path.join(targetDirectory, "scripts", "build.mjs"),
+    await renderBuildScriptTemplate()
+  );
 }
 
 function printNextSteps(targetDirectory, cwd) {
@@ -334,12 +279,12 @@ function printNextSteps(targetDirectory, cwd) {
   console.log("  npm run bump -- 0.1.1");
 }
 
-export async function scaffoldProject({ projectDirectoryArg, cwd, rl }) {
-  const targetDirectory = await resolveTargetDirectory(
-    rl,
-    cwd,
-    projectDirectoryArg
-  );
+export async function scaffoldProject({
+  projectDirectoryArg,
+  cwd,
+  prompt = createPromptAdapter(),
+}) {
+  const targetDirectory = await resolveTargetDirectory(prompt, cwd, projectDirectoryArg);
 
   const directoryBaseName = toDirectoryBaseName(targetDirectory);
   const identifierSegment = toIdentifierSegment(directoryBaseName);
@@ -347,36 +292,42 @@ export async function scaffoldProject({ projectDirectoryArg, cwd, rl }) {
   const defaultIdentifier = `org.example.${identifierSegment}`;
   const defaultName = `${toTitleCase(directoryBaseName)} Extension`;
   
-  const identifier = await promptInput(rl, "Extension identifier", {
+  const identifier = await prompt.text("Extension identifier", {
     defaultValue: defaultIdentifier,
     validate: validateIdentifier,
   });
-  const name = await promptInput(rl, "Extension name", {
+  const name = await prompt.text("Extension name", {
     defaultValue: defaultName,
     validate: validateRequiredText("Extension name"),
   });
-  const description = await promptInput(rl, "Extension description", {
-    defaultValue: "My first SJMCL extension.",
-    validate: validateRequiredText("Extension description"),
+  const description = await prompt.text("Extension description (Optional)", {
+    defaultValue: "",
+    placeholder: "My first SJMCL extension.",
   });
-  const author = await promptInput(rl, "Extension author", {
-    defaultValue: getDefaultAuthor(),
-    validate: validateRequiredText("Extension author"),
+  const author = await prompt.text("Extension author (Optional)", {
+    defaultValue: "",
+    placeholder: getDefaultAuthor(),
   });
-  const version = await promptInput(rl, "Extension version", {
-    defaultValue: "0.1.0",
-    validate: validateSemver("Extension version"),
+  const version = await prompt.text("Extension version (Optional)", {
+    defaultValue: "",
+    placeholder: "0.1.0",
+    validate: validateOptionalSemver("Extension version"),
   });
-  const minimalLauncherVersion = await promptInput(
-    rl,
-    "Minimal launcher version",
+  const minimalLauncherVersion = await prompt.text(
+    "Minimal launcher version (Optional)",
     {
-      defaultValue: "1.0.0-beta.4",
-      validate: validateSemver("Minimal launcher version"),
+      defaultValue: "",
+      placeholder: "1.0.0-beta.5",
+      validate: validateOptionalSemver("Minimal launcher version"),
     }
   );
+  const normalizedDescription = description.trim();
+  const normalizedAuthor = author.trim();
+  const normalizedVersion = version.trim();
+  const normalizedMinimalLauncherVersion = minimalLauncherVersion.trim();
+  const packageVersion = normalizedVersion || "0.1.0";
   const frontendEntry = normalizePathToPosix(
-    await promptInput(rl, "Frontend entry", {
+    await prompt.text("Frontend entry", {
       defaultValue: "frontend/index.js",
       validate: validateFrontendEntry,
     })
@@ -385,31 +336,49 @@ export async function scaffoldProject({ projectDirectoryArg, cwd, rl }) {
   const answers = {
     identifier,
     name,
-    description,
-    author,
-    version,
-    minimalLauncherVersion,
+    description: normalizedDescription,
+    author: normalizedAuthor,
+    version: normalizedVersion,
+    minimalLauncherVersion: normalizedMinimalLauncherVersion,
+    packageVersion,
     frontendEntry,
   };
 
   mkdirSync(targetDirectory, { recursive: true });
   copyTemplateTree(TEMPLATE_DIR_PATH, targetDirectory, {
     IDENTIFIER: answers.identifier,
+    IDENTIFIER_JSON: JSON.stringify(answers.identifier),
+    PACKAGE_NAME: packageName,
+    PACKAGE_NAME_JSON: JSON.stringify(packageName),
+    PACKAGE_DESCRIPTION_JSON: JSON.stringify(
+      `${answers.name} SJMCL extension project.`
+    ),
     NAME: answers.name,
     NAME_JSON: JSON.stringify(answers.name),
     DESCRIPTION: answers.description,
     DESCRIPTION_JSON: JSON.stringify(answers.description),
+    OPTIONAL_DESCRIPTION_FIELD: buildOptionalJsonField(
+      "description",
+      answers.description
+    ),
     AUTHOR: answers.author,
-    VERSION: answers.version,
+    AUTHOR_JSON: JSON.stringify(answers.author),
+    OPTIONAL_AUTHOR_FIELD: buildOptionalJsonField("author", answers.author),
+    VERSION: answers.packageVersion,
+    VERSION_JSON: JSON.stringify(answers.packageVersion),
+    OPTIONAL_VERSION_FIELD: buildOptionalJsonField("version", answers.version),
     MINIMAL_LAUNCHER_VERSION: answers.minimalLauncherVersion,
+    MINIMAL_LAUNCHER_VERSION_JSON: JSON.stringify(
+      answers.minimalLauncherVersion
+    ),
+    OPTIONAL_MINIMAL_LAUNCHER_VERSION_FIELD: buildOptionalJsonField(
+      "minimalLauncherVersion",
+      answers.minimalLauncherVersion
+    ),
     FRONTEND_ENTRY: answers.frontendEntry,
+    FRONTEND_ENTRY_JSON: JSON.stringify(answers.frontendEntry),
   });
-
-  writeJson(
-    path.join(targetDirectory, "package.json"),
-    buildPackageJson(packageName, answers.version, answers.name)
-  );
-  writeJson(path.join(targetDirectory, "sjmcl.ext.json"), buildManifest(answers));
+  await writeGeneratedTemplateFiles(targetDirectory);
 
   printNextSteps(targetDirectory, cwd);
 }

@@ -1,0 +1,54 @@
+import type { ExtensionFactoryApi } from "../types/sjmcl";
+
+export function createExamplePage(
+  api: ExtensionFactoryApi,
+  standalone: boolean
+) {
+  const React = api.React;
+  const { Badge, Box, Button, HStack, Text, VStack } = api.ChakraUI;
+
+  return function ExamplePage() {
+    const host = api.getHostContext();
+    const pageKind = standalone ? "standalone" : "embedded";
+
+    return (
+      <VStack align="stretch" spacing={4}>
+        <HStack justify="space-between" align="center">
+          <Text fontSize="lg" fontWeight="bold">
+            Example {standalone ? "Standalone" : "Custom"} Page
+          </Text>
+          <Badge colorScheme="blue" variant="subtle">
+            {pageKind}
+          </Badge>
+        </HStack>
+        <Text fontSize="sm">
+          This page is written in TSX, so you can build your extension UI with
+          component trees instead of manual React.createElement(...) calls.
+        </Text>
+        <Box className="secondary-text" fontSize="sm">
+          Route: /extension/{api.identifier}/example
+        </Box>
+        <HStack spacing={3}>
+          <Button
+            size="sm"
+            onClick={() => host.actions.navigate(`/extension/${api.identifier}/example`)}
+          >
+            Open Embedded Page
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() =>
+              host.actions.openWindow(
+                `/standalone/extension/${api.identifier}/example-standalone`,
+                "Example Standalone Page"
+              )
+            }
+          >
+            Open Standalone Page
+          </Button>
+        </HStack>
+      </VStack>
+    );
+  };
+}

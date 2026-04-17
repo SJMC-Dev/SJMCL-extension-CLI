@@ -1,6 +1,6 @@
 {
   "name": "create-sjmcl-extension",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Create a bundled SJMCL extension project.",
   "type": "module",
   "bin": {
@@ -27,6 +27,9 @@
     "start": "node ./bin/create-sjmcl-extension.js"
   },
   "dependencies": {
+    "@clack/prompts": "^0.11.0",
+    "commander": "^13.1.0",
+    "esbuild": "^0.25.12",
     "semver": "^7.7.2"
   }
 }

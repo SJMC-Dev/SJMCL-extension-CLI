@@ -25,18 +25,15 @@ npm pack
 Test the generated `.tgz`:
 
 ```bash
-mkdir -p /tmp/sjmcl-cli-test
-cd /tmp/sjmcl-cli-test
-
 npm exec --yes \
-  --package /path/to/create-sjmcl-extension-0.1.0.tgz \
-  create-sjmcl-extension my-test-extension
+  --package ./create-sjmcl-extension-0.3.0.tgz \
+  create-sjmcl-extension test
 ```
 
 Then test the generated project:
 
 ```bash
-cd my-test-extension
+cd test
 npm install
 npm run build
 npm run bump -- 0.1.1

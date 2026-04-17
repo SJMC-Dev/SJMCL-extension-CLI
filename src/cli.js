@@ -1,40 +1,30 @@
-import { createInterface } from "node:readline/promises";
-import { stdin as input, stdout as output } from "node:process";
+import { Command } from "commander";
+import { stdout as output } from "node:process";
 import { getCliVersion, printWelcomeBannerWithUpdate } from "./banner.js";
 import { scaffoldProject } from "./scaffold.js";
 import { checkForUpdates } from "./update-check.js";
 
-function showHelp() {
-  console.log(`create-sjmcl-extension
-
-Usage:
-  npm create sjmcl-extension@latest [project-directory]
-  npx create-sjmcl-extension [project-directory]
-
-Options:
-  --help, -h    Show this help message
-`);
+function createCliProgram() {
+  return new Command()
+    .name("create-sjmcl-extension")
+    .usage("[project-directory]")
+    .description("Scaffold an SJMCL extension project.")
+    .argument("[project-directory]", "Target project directory")
+    .helpOption("-h, --help", "Show this help message")
+    .showHelpAfterError()
+    .showSuggestionAfterError();
 }
 
 export async function runCli(argv) {
-  if (argv.includes("--help") || argv.includes("-h")) {
-    showHelp();
-    return;
-  }
+  const program = createCliProgram();
+  await program.parseAsync(argv, { from: "user" });
 
   const latestVersion = await checkForUpdates(getCliVersion());
   printWelcomeBannerWithUpdate(output, latestVersion);
 
-  const projectDirectoryArg = argv.find((value) => !value.startsWith("-"));
-  const rl = createInterface({ input, output });
-
-  try {
-    await scaffoldProject({
-      projectDirectoryArg,
-      cwd: process.cwd(),
-      rl,
-    });
-  } finally {
-    rl.close();
-  }
+  const [projectDirectoryArg] = program.processedArgs;
+  await scaffoldProject({
+    projectDirectoryArg,
+    cwd: process.cwd(),
+  });
 }

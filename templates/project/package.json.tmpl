@@ -1,0 +1,17 @@
+{
+  "name": __PACKAGE_NAME_JSON__,
+  "private": true,
+  "version": __VERSION_JSON__,
+  "description": __PACKAGE_DESCRIPTION_JSON__,
+  "type": "module",
+  "scripts": {
+    "build": "node ./scripts/build.mjs",
+    "bump": "node ./scripts/bump.mjs"
+  },
+  "devDependencies": {
+    "commander": "^13.1.0",
+    "esbuild": "^0.25.3",
+    "fflate": "^0.8.2",
+    "semver": "^7.7.2"
+  }
+}
