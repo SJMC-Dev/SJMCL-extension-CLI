@@ -14,6 +14,7 @@ import os from "node:os";
 import path from "node:path";
 import color from "picocolors";
 import semver from "semver";
+import { getCliVersion } from "./banner.js";
 import { renderBuildScriptTemplate } from "./template-build/render-build-script.js";
 import { getTemplateProjectPath } from "./template-files.js";
 
@@ -238,6 +239,7 @@ function validateFrontendEntry(value) {
 }
 
 const EMPTY_OPTIONAL_PLACEHOLDER = "(Skipped)";
+const CLI_VERSION = getCliVersion();
 
 function buildOptionalJsonField(fieldName, value) {
   if (!value) {
@@ -444,6 +446,8 @@ export async function scaffoldProject({
     ),
     FRONTEND_ENTRY: answers.frontendEntry,
     FRONTEND_ENTRY_JSON: JSON.stringify(answers.frontendEntry),
+    CLI_VERSION: CLI_VERSION,
+    CLI_VERSION_JSON: JSON.stringify(CLI_VERSION),
   });
   await writeGeneratedTemplateFiles(targetDirectory);
 

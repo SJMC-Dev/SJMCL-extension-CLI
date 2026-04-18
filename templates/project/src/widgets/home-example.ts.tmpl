@@ -1,0 +1,101 @@
+import type { ExtensionFactoryApi } from "../types/host";
+import { useButtonSettings } from "../shared/settings";
+
+const EXTENSION_DOCUMENT_URL = "https://mc.sjtu.cn/sjmcl/en/dev/extension/";
+
+export function createHomeExampleWidget(api: ExtensionFactoryApi) {
+  const React = api.React;
+  const { Badge, Button, HStack, Text, VStack, Wrap, WrapItem } = api.ChakraUI;
+
+  return function HomeExampleWidget() {
+    const host = api.getHostContext();
+    const hostData = api.useHostData();
+    const { settings, hasLoaded } = useButtonSettings(api);
+    const buttons: Array<{
+      key: string;
+      label: string;
+      variant?: string;
+      onClick: () => Promise<void> | void;
+    }> = [
+      {
+        key: "customPageEnabled",
+        label: "Open Custom Page",
+        onClick: function onClick() {
+          return host.actions.navigate(`/extension/${api.identifier}/example`);
+        },
+      },
+      {
+        key: "standalonePageEnabled",
+        label: "Open Standalone Page",
+        variant: "outline",
+        onClick: function onClick() {
+          host.actions.openWindow(
+            `/standalone/extension/${api.identifier}/example-standalone`,
+            "Example Standalone Page"
+          );
+        },
+      },
+      {
+        key: "documentEnabled",
+        label: "Extension Document",
+        variant: "ghost",
+        onClick: function onClick() {
+          return host.actions.openExternalLink(EXTENSION_DOCUMENT_URL);
+        },
+      },
+    ].filter(function isVisible(button) {
+      return settings[button.key];
+    });
+
+    return React.createElement(
+      VStack,
+      { align: "stretch", spacing: 3 },
+      React.createElement(
+        HStack,
+        { justify: "space-between", align: "center" },
+        React.createElement(Text, { fontSize: "sm", fontWeight: "bold" }, __NAME_JSON__),
+        React.createElement(
+          Badge,
+          { colorScheme: "green", variant: "subtle" },
+          api.identifier
+        )
+      ),
+      React.createElement(Text, { fontSize: "sm" }, __DESCRIPTION_JSON__),
+      React.createElement(
+        Text,
+        { fontSize: "xs", className: "secondary-text" },
+        "Current player: ",
+        (hostData.selectedPlayer && hostData.selectedPlayer.name) || "None"
+      ),
+      hasLoaded
+        ? buttons.length
+          ? React.createElement(
+              Wrap,
+              { spacing: 3 },
+              buttons.map(function renderButton(button) {
+                return React.createElement(
+                  WrapItem,
+                  { key: button.key },
+                  React.createElement(
+                    Button,
+                    {
+                      size: "sm",
+                      variant: button.variant,
+                      onClick: function () {
+                        void button.onClick();
+                      },
+                    },
+                    button.label
+                  )
+                );
+              })
+            )
+          : React.createElement(
+              Text,
+              { fontSize: "xs", className: "secondary-text" },
+              "All demo buttons are hidden. Re-enable them in the settings page."
+            )
+        : null
+    );
+  };
+}

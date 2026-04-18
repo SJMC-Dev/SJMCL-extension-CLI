@@ -1,7 +1,8 @@
 import type { ExtensionFactory, ExtensionFactoryApi } from "./types/host";
 import { createExamplePage } from "./pages/example-page";
 import { createSettingsPage } from "./pages/settings-page";
-import { createHomeWidget } from "./widgets/home-widget";
+import { createHomeExampleWidget } from "./widgets/home-example";
+import { createHomeWelcomeWidget } from "./widgets/home-welcome";
 
 (function registerExampleExtension(factory: ExtensionFactory) {
   const token = document.currentScript?.dataset?.extensionToken || "";
@@ -17,13 +18,24 @@ import { createHomeWidget } from "./widgets/home-widget";
   window.registerExtension(factory, token);
 })(function createExtension(api: ExtensionFactoryApi) {
   return {
-    homeWidget: {
-      title: __NAME_JSON__,
-      description: __DESCRIPTION_JSON__,
-      defaultWidth: 360,
-      minWidth: 300,
-      Component: createHomeWidget(api),
-    },
+    homeWidgets: [
+      {
+        key: "home-welcome",
+        title: "Welcome!",
+        description: "Example widget showing packaged static assets.",
+        defaultWidth: 320,
+        minWidth: 260,
+        Component: createHomeWelcomeWidget(api),
+      },
+      {
+        key: "home-example",
+        title: "Home Example",
+        description: __DESCRIPTION_JSON__,
+        defaultWidth: 360,
+        minWidth: 300,
+        Component: createHomeExampleWidget(api),
+      },
+    ],
     settingsPage: {
       Component: createSettingsPage(api),
     },
