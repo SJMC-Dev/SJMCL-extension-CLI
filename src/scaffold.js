@@ -9,8 +9,10 @@ import {
   writeFileSync,
 } from "node:fs";
 import * as clack from "@clack/prompts";
+import { TextPrompt } from "@clack/core";
 import os from "node:os";
 import path from "node:path";
+import color from "picocolors";
 import semver from "semver";
 import { renderBuildScriptTemplate } from "./template-build/render-build-script.js";
 import { getTemplateProjectPath } from "./template-files.js";
@@ -32,9 +34,73 @@ function createPromptAdapter() {
     process.exit(0);
   }
 
+  function formatPromptSymbol(state) {
+    switch (state) {
+      case "initial":
+      case "active":
+        return color.cyan("◆");
+      case "cancel":
+        return color.red("■");
+      case "error":
+        return color.yellow("▲");
+      case "submit":
+        return color.green("◇");
+      default:
+        return color.cyan("◆");
+    }
+  }
+
+  async function optionalText(label, options = {}) {
+    const {
+      defaultValue = "",
+      emptyValueLabel = "(Skipped)",
+      validate,
+    } = options;
+    const suggestion = defaultValue;
+
+    const result = await new TextPrompt({
+      defaultValue: "",
+      placeholder: suggestion || undefined,
+      validate,
+      render() {
+        const title = `${color.gray("│")}\n${formatPromptSymbol(this.state)}  ${label}\n`;
+        const placeholderText = suggestion
+          ? color.inverse(suggestion[0]) + color.dim(suggestion.slice(1))
+          : color.inverse(color.hidden("_"));
+        const activeValue = this.value ? this.valueWithCursor : placeholderText;
+
+        switch (this.state) {
+          case "error":
+            return `${title.trim()}\n${color.yellow("│")}  ${activeValue}\n${color.yellow("└")}  ${color.yellow(this.error)}\n`;
+          case "submit":
+            return `${title}${color.gray("│")}  ${color.dim(
+              this.value || emptyValueLabel
+            )}`;
+          case "cancel":
+            return `${title}${color.gray("│")}  ${color.strikethrough(
+              color.dim(this.value ?? "")
+            )}${this.value?.trim() ? `\n${color.gray("│")}` : ""}`;
+          default:
+            return `${title}${color.cyan("│")}  ${activeValue}\n${color.cyan("└")}\n`;
+        }
+      },
+    }).prompt();
+
+    return unwrapPromptResult(result);
+  }
+
   return {
     async text(label, options = {}) {
-      const { defaultValue = "", placeholder, validate } = options;
+      const { defaultValue = "", placeholder, validate, emptyValueLabel } = options;
+
+      if (emptyValueLabel) {
+        return optionalText(label, {
+          defaultValue,
+          emptyValueLabel,
+          validate,
+        });
+      }
+
       const result = await clack.text({
         message: label,
         defaultValue,
@@ -171,6 +237,8 @@ function validateFrontendEntry(value) {
   return "";
 }
 
+const EMPTY_OPTIONAL_PLACEHOLDER = "(Skipped)";
+
 function buildOptionalJsonField(fieldName, value) {
   if (!value) {
     return "";
@@ -300,23 +368,23 @@ export async function scaffoldProject({
     validate: validateRequiredText("Extension name"),
   });
   const description = await prompt.text("Extension description (Optional)", {
-    defaultValue: "",
-    placeholder: "My first SJMCL extension.",
+    defaultValue: "My first SJMCL extension.",
+    emptyValueLabel: EMPTY_OPTIONAL_PLACEHOLDER,
   });
   const author = await prompt.text("Extension author (Optional)", {
-    defaultValue: "",
-    placeholder: getDefaultAuthor(),
+    defaultValue: getDefaultAuthor(),
+    emptyValueLabel: EMPTY_OPTIONAL_PLACEHOLDER,
   });
   const version = await prompt.text("Extension version (Optional)", {
-    defaultValue: "",
-    placeholder: "0.1.0",
+    defaultValue: "0.1.0",
+    emptyValueLabel: EMPTY_OPTIONAL_PLACEHOLDER,
     validate: validateOptionalSemver("Extension version"),
   });
   const minimalLauncherVersion = await prompt.text(
     "Minimal launcher version (Optional)",
     {
-      defaultValue: "",
-      placeholder: "1.0.0-beta.5",
+      defaultValue: "1.0.0-beta.5",
+      emptyValueLabel: EMPTY_OPTIONAL_PLACEHOLDER,
       validate: validateOptionalSemver("Minimal launcher version"),
     }
   );

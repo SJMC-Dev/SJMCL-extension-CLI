@@ -1,6 +1,6 @@
 {
   "name": "create-sjmcl-extension",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Create a bundled SJMCL extension project.",
   "type": "module",
   "bin": {
