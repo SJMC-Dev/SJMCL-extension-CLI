@@ -234,6 +234,18 @@ export interface ExtensionAbilityActions {
    * See: {@link https://mc.sjtu.cn/sjmcl/en/dev/extension/api.html#reloadself}
    */
   reloadSelf: () => void;
+  /**
+   * Downloads and schedules an extension self-update.
+   *
+   * @example
+   * await host.actions.updateSelf(
+   *   "https://example.com/example-extension-1.2.3.sjmclx",
+   *   "1.2.3"
+   * );
+   *
+   * See: {@link https://mc.sjtu.cn/sjmcl/en/dev/extension/api.html#updateself}
+   */
+  updateSelf: (src: string, newVersion: string) => Promise<void>;
 }
 
 /**

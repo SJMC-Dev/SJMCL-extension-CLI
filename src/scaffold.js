@@ -385,7 +385,7 @@ export async function scaffoldProject({
   const minimalLauncherVersion = await prompt.text(
     "Minimal launcher version (Optional)",
     {
-      defaultValue: "1.0.0-beta.5",
+      defaultValue: "1.0.0-beta.6",
       emptyValueLabel: EMPTY_OPTIONAL_PLACEHOLDER,
       validate: validateOptionalSemver("Minimal launcher version"),
     }
