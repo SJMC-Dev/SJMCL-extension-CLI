@@ -1,4 +1,6 @@
 import type { ExtensionFactory, ExtensionFactoryApi } from "./types/host";
+import { ExtensionUISlotKey } from "./types/host";
+import { createSaveInfoModal } from "./modals/save-info-modal";
 import { createExamplePage } from "./pages/example-page";
 import { createSettingsPage } from "./pages/settings-page";
 import { createHomeExampleWidget } from "./widgets/home-example";
@@ -17,6 +19,8 @@ import { createHomeWelcomeWidget } from "./widgets/home-welcome";
 
   window.registerExtension(factory, token);
 })(function createExtension(api: ExtensionFactoryApi) {
+  const host = api.getHostContext();
+
   return {
     homeWidgets: [
       {
@@ -39,6 +43,14 @@ import { createHomeWelcomeWidget } from "./widgets/home-welcome";
     settingsPage: {
       Component: createSettingsPage(api),
     },
+    customModal: {
+      key: "save-info",
+      title: "SaveInfo",
+      size: "xl",
+      isCentered: true,
+      scrollBehavior: "inside",
+      Component: createSaveInfoModal(api),
+    },
     pages: [
       {
         routePath: "example",
@@ -50,5 +62,28 @@ import { createHomeWelcomeWidget } from "./widgets/home-welcome";
         Component: createExamplePage(api, true),
       },
     ],
+    slots: {
+      [ExtensionUISlotKey.InstanceWorldItemMenuOperations]: {
+        getItems(context) {
+          if (!context.instanceId || !context.save) {
+            return [];
+          }
+
+          return [
+            {
+              icon: "info",
+              label: "Show SaveInfo",
+              onClick: () => {
+                host.actions.openCustomModal("save-info", {
+                  source: "world-slot",
+                  instanceId: context.instanceId,
+                  save: context.save,
+                });
+              },
+            },
+          ];
+        },
+      },
+    },
   };
 });

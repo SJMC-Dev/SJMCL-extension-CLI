@@ -1,0 +1,38 @@
+import type { ExtensionFactoryApi } from "../types/host";
+
+export function createSaveInfoModal(api: ExtensionFactoryApi) {
+  const React = api.React;
+  const { Box, Text, VStack } = api.ChakraUI;
+
+  return function SaveInfoModal({
+    params,
+  }: {
+    params?: Record<string, unknown>;
+    close: () => void;
+  }) {
+    const content = React.useMemo(
+      () => JSON.stringify(params ?? {}, null, 2),
+      [params]
+    );
+
+    return (
+      <VStack align="stretch" spacing={4}>
+        <Text fontSize="sm" color="gray.500">
+          Save data received from the world list slot
+        </Text>
+        <Box
+          as="pre"
+          m={0}
+          p={3}
+          borderWidth="1px"
+          borderRadius="md"
+          overflow="auto"
+          whiteSpace="pre-wrap"
+          fontSize="xs"
+        >
+          {content}
+        </Box>
+      </VStack>
+    );
+  };
+}
