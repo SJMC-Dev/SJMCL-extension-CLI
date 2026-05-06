@@ -26,7 +26,7 @@ Test the generated `.tgz`:
 
 ```bash
 npm exec --yes \
-  --package ./create-sjmcl-extension-0.3.0.tgz \
+  --package ./create-sjmcl-extension-0.5.0.tgz \
   create-sjmcl-extension test
 ```
 
