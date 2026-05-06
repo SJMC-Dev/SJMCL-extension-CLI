@@ -1,6 +1,25 @@
 export type SetStateAction<T> = T | ((current: T) => T);
 export type StateSetter<T> = (value: SetStateAction<T>) => void;
-export type ExtensionComponent = (...args: any[]) => unknown;
+export type ExtensionComponent<TProps = any> = (
+  props: TProps,
+  ...args: any[]
+) => unknown;
+
+export enum ExtensionUISlotKey {
+  InstanceWorldItemMenuOperations = "ui.instance.world.item_menu_operations",
+  InstanceServerItemMenuOperations = "ui.instance.server.item_menu_operations",
+  InstanceModItemMenuOperations = "ui.instance.mod.item_menu_operations",
+  InstanceResourcePackItemMenuOperations = "ui.instance.resourcepack.item_menu_operations",
+  InstanceServerResPackItemMenuOperations = "ui.instance.server_resourcepack.item_menu_operations",
+  InstanceSchematicItemMenuOperations = "ui.instance.schematic.item_menu_operations",
+  InstanceShaderPackItemMenuOperations = "ui.instance.shaderpack.item_menu_operations",
+}
+
+export type ExtensionSlotKey = ExtensionUISlotKey;
+
+export interface ExtensionFrontend {
+  entry: string;
+}
 
 export interface ExtensionInfo {
   identifier: string;
@@ -11,9 +30,7 @@ export interface ExtensionInfo {
   minimalLauncherVersion?: string | null;
   path: string;
   iconSrc: string;
-  frontend?: {
-    entry: string;
-  } | null;
+  frontend?: ExtensionFrontend | null;
 }
 
 /**
@@ -52,13 +69,13 @@ export interface ExtensionAbilityData {
    *
    * See: {@link https://mc.sjtu.cn/sjmcl/en/dev/extension/api.html#host-data}
    */
-  playerList: Array<Record<string, unknown>>;
+  playerList: Record<string, unknown>[];
   /**
    * Available instance list snapshot.
    *
    * See: {@link https://mc.sjtu.cn/sjmcl/en/dev/extension/api.html#host-data}
    */
-  instanceList: Array<Record<string, unknown>>;
+  instanceList: Record<string, unknown>[];
   /**
    * Current route query parameters.
    *
@@ -106,7 +123,7 @@ export interface ExtensionAbilityActions {
    *
    * See: {@link https://mc.sjtu.cn/sjmcl/en/dev/extension/api.html#updateconfig}
    */
-  updateConfig: (path: string, value: unknown) => void;
+  updateConfig: (path: string, value: any) => void;
   /**
    * Navigates within the route scope allowed for the extension.
    *
@@ -116,6 +133,13 @@ export interface ExtensionAbilityActions {
    * See: {@link https://mc.sjtu.cn/sjmcl/en/dev/extension/api.html#navigate}
    */
   navigate: (route: string) => Promise<void>;
+  /**
+   * Navigates back inside the launcher.
+   *
+   * @example
+   * host.actions.navBack();
+   */
+  navBack: () => void;
   /**
    * Opens a standalone window for the given route.
    *
@@ -145,7 +169,14 @@ export interface ExtensionAbilityActions {
    *
    * See: {@link https://mc.sjtu.cn/sjmcl/en/dev/extension/api.html#opensharedmodal}
    */
-  openSharedModal: (key: string, params?: unknown) => void;
+  openSharedModal: (key: string, params?: any) => void;
+  /**
+   * Opens a custom modal registered by the current extension.
+   *
+   * @example
+   * host.actions.openCustomModal("example-modal", { from: api.identifier });
+   */
+  openCustomModal: (key: string, params?: any) => void;
   /**
    * Reads a UTF-8 text file from the extension `data/` directory.
    *
@@ -154,7 +185,10 @@ export interface ExtensionAbilityActions {
    *
    * See: {@link https://mc.sjtu.cn/sjmcl/en/dev/extension/api.html#readfile}
    */
-  readFile: (path: string) => Promise<string>;
+  readFile: (
+    path: string,
+    mode?: "string" | "base64"
+  ) => Promise<string>;
   /**
    * Writes text content into a file under the extension `data/` directory.
    *
@@ -163,7 +197,11 @@ export interface ExtensionAbilityActions {
    *
    * See: {@link https://mc.sjtu.cn/sjmcl/en/dev/extension/api.html#writefile}
    */
-  writeFile: (path: string, content: string) => Promise<void>;
+  writeFile: (
+    path: string,
+    content: string,
+    mode?: "string" | "base64"
+  ) => Promise<void>;
   /**
    * Deletes a file under the extension `data/` directory.
    *
@@ -276,7 +314,7 @@ export interface ExtensionAbilityState {
  *
  * See: {@link https://mc.sjtu.cn/sjmcl/en/dev/extension/api.html#api-gethostcontext}
  */
-export interface ExtensionHostContext {
+export interface ExtensionAbilityApi {
   /**
    * Host action methods implemented by the launcher.
    *
@@ -367,7 +405,7 @@ export interface ExtensionFactoryApi {
    *
    * See: {@link https://mc.sjtu.cn/sjmcl/en/dev/extension/api.html#api-gethostcontext}
    */
-  getHostContext: () => ExtensionHostContext;
+  getHostContext: () => ExtensionAbilityApi;
   /**
    * React Hook for reading host data snapshots.
    *
@@ -392,10 +430,13 @@ export interface ExtensionFactoryApi {
  *
  * See: {@link https://mc.sjtu.cn/sjmcl/en/dev/extension/api.html}#homewidget
  */
-export interface ExtensionHomeWidgetDefinition {
+interface ExtensionBaseDefinition<TProps = object> {
+  Component: ExtensionComponent<TProps>;
+}
+
+export interface ExtensionHomeWidgetDefinition extends ExtensionBaseDefinition {
   key?: string;
   title: string;
-  Component: ExtensionComponent;
   description?: string;
   icon?: string;
   defaultWidth?: number;
@@ -415,9 +456,7 @@ export interface ExtensionHomeWidgetDefinition {
  *
  * See: {@link https://mc.sjtu.cn/sjmcl/en/dev/extension/api.html}#settingspage
  */
-export interface ExtensionSettingsPageDefinition {
-  Component: ExtensionComponent;
-}
+export interface ExtensionSettingsPageDefinition extends ExtensionBaseDefinition {}
 
 /**
  * Single extension page contribution.
@@ -433,11 +472,101 @@ export interface ExtensionSettingsPageDefinition {
  *
  * See: {@link https://mc.sjtu.cn/sjmcl/en/dev/extension/api.html}#page
  */
-export interface ExtensionPageDefinition {
+export interface ExtensionPageDefinition extends ExtensionBaseDefinition {
   routePath: string;
-  Component: ExtensionComponent;
   isStandAlone?: boolean;
 }
+
+/**
+ * Props injected into a custom modal component.
+ */
+export interface ExtensionModalComponentProps {
+  params?: any;
+  close: () => void;
+}
+
+/**
+ * Extension-declared custom modal rendered by the host.
+ *
+ * Additional modal options are forwarded to the launcher modal wrapper.
+ */
+export interface ExtensionModalDefinition
+  extends ExtensionBaseDefinition<ExtensionModalComponentProps> {
+  key: string;
+  title: string;
+  params?: any;
+  [option: string]: unknown;
+}
+
+interface ExtensionInstanceSlotContextBase {
+  instanceId: string | undefined;
+  summary: Record<string, unknown> | undefined;
+}
+
+export type ExtensionSlotContextMap = {
+  [ExtensionUISlotKey.InstanceWorldItemMenuOperations]: ExtensionInstanceSlotContextBase & {
+    save: Record<string, unknown>;
+  };
+  [ExtensionUISlotKey.InstanceServerItemMenuOperations]: ExtensionInstanceSlotContextBase & {
+    server: Record<string, unknown>;
+  };
+  [ExtensionUISlotKey.InstanceModItemMenuOperations]: ExtensionInstanceSlotContextBase & {
+    mod: Record<string, unknown>;
+  };
+  [ExtensionUISlotKey.InstanceSchematicItemMenuOperations]: ExtensionInstanceSlotContextBase & {
+    schematic: Record<string, unknown>;
+  };
+  [ExtensionUISlotKey.InstanceShaderPackItemMenuOperations]: ExtensionInstanceSlotContextBase & {
+    pack: Record<string, unknown>;
+  };
+} & {
+  [K in
+    | ExtensionUISlotKey.InstanceResourcePackItemMenuOperations
+    | ExtensionUISlotKey.InstanceServerResPackItemMenuOperations]: ExtensionInstanceSlotContextBase & {
+    pack: Record<string, unknown>;
+  };
+};
+
+interface CommonIconButtonSlotItem {
+  icon: string | any;
+  label?: string;
+  onClick?: (...args: any[]) => void;
+  danger?: boolean;
+}
+
+export type ExtensionSlotItemMap = {
+  [K in
+    | ExtensionUISlotKey.InstanceWorldItemMenuOperations
+    | ExtensionUISlotKey.InstanceServerItemMenuOperations
+    | ExtensionUISlotKey.InstanceModItemMenuOperations
+    | ExtensionUISlotKey.InstanceResourcePackItemMenuOperations
+    | ExtensionUISlotKey.InstanceServerResPackItemMenuOperations
+    | ExtensionUISlotKey.InstanceSchematicItemMenuOperations
+    | ExtensionUISlotKey.InstanceShaderPackItemMenuOperations]: CommonIconButtonSlotItem;
+};
+
+export interface ExtensionSlotDefinition<K extends ExtensionSlotKey> {
+  getItems: (context: ExtensionSlotContextMap[K]) => ExtensionSlotItemMap[K][];
+}
+
+export interface ExtensionContributionBase {
+  identifier: string;
+  resetKey: string;
+  extension: ExtensionInfo;
+}
+
+export interface ExtensionSlotContribution<K extends ExtensionSlotKey>
+  extends ExtensionSlotDefinition<K>, ExtensionContributionBase {
+  key: K;
+}
+
+export type ExtensionSlotRegistry = Partial<{
+  [K in ExtensionSlotKey]: ExtensionSlotDefinition<K>;
+}>;
+
+export type ExtensionSlotContributionRegistry = Partial<{
+  [K in ExtensionSlotKey]: ExtensionSlotContribution<K>;
+}>;
 
 /**
  * Object returned by `factory(api)` to register extension UI contributions.
@@ -461,12 +590,30 @@ export interface ExtensionPageDefinition {
  *
  * See: {@link https://mc.sjtu.cn/sjmcl/en/dev/extension/api.html}#ui-contributions
  */
-export interface ExtensionRegistration {
+export interface ExtensionContributionRegistration {
   homeWidget?: ExtensionHomeWidgetDefinition;
   homeWidgets?: ExtensionHomeWidgetDefinition[];
   settingsPage?: ExtensionSettingsPageDefinition;
   page?: ExtensionPageDefinition;
   pages?: ExtensionPageDefinition[];
+  customModal?: ExtensionModalDefinition;
+  customModals?: ExtensionModalDefinition[];
+}
+
+export interface ExtensionHomeWidgetContribution
+  extends ExtensionHomeWidgetDefinition, ExtensionContributionBase {}
+
+export interface ExtensionSettingsPageContribution
+  extends ExtensionSettingsPageDefinition, ExtensionContributionBase {}
+
+export interface ExtensionPageContribution
+  extends ExtensionPageDefinition, ExtensionContributionBase {}
+
+export interface ExtensionModalContribution
+  extends ExtensionModalDefinition, ExtensionContributionBase {}
+
+export interface ExtensionRegistration extends ExtensionContributionRegistration {
+  slots?: ExtensionSlotRegistry;
   dispose?: () => void;
 }
 
@@ -486,6 +633,8 @@ export interface ExtensionRegistration {
 export type ExtensionFactory = (
   api: ExtensionFactoryApi
 ) => ExtensionRegistration | void;
+
+export type HomeWidgetStateTuple = [string, number, boolean];
 
 declare global {
   interface Window {
