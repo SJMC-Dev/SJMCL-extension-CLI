@@ -35,7 +35,21 @@ npx create-sjmcl-extension sync-types ./existing-extension
 
 ## Generated Project
 
-The generated project includes a small build pipeline and two project scripts:
+The generated project includes a small build pipeline and three project scripts:
+
+### `npm run dev`
+
+Starts a development server that watches source files, rebuilds on change, and writes output directly to SJMCL's installed extension directory. A `sjmcl://reload-extension?id=<identifier>` deeplink is fired after each build so the launcher reloads the extension automatically.
+
+The extension must be manually enabled in **Settings → Extensions** first. Use the refresh button if it doesn't appear.
+
+```bash
+npm run dev
+npm run dev -- --mode production
+npm run dev -- --compress
+npm run dev -- --no-reload
+npm run dev -- --path ./custom-output
+```
 
 ### `npm run build`
 

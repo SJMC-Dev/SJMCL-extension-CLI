@@ -5,8 +5,40 @@ Generated with `create-sjmcl-extension`.
 ## Scripts
 
 - `npm install`
+- `npm run dev`
 - `npm run build`
 - `npm run bump -- 1.2.3`
+
+## Dev Server
+
+`npm run dev` starts a development server that watches your source files, rebuilds on every change, and writes the output directly to SJMCL's installed extension directory so the launcher can load it instantly.
+
+```bash
+npm run dev
+npm run dev -- --mode production
+npm run dev -- --compress
+npm run dev -- --no-reload
+npm run dev -- --path ./dist/__IDENTIFIER__
+```
+
+### Options
+
+| Flag | Value | Default | Effect |
+| --- | --- | --- | --- |
+| `--mode` | `development`, `production` | `development` | Build profile. `production` enables minification. |
+| `--path` | absolute path | SJMCL installed extension directory | Custom output directory. |
+| `--compress` | boolean | `false` | Also create a `.sjmclx` package alongside the dev output. |
+| `--no-reload` | none | off | Skip triggering the extension reload deeplink after each build. |
+
+### How It Works
+
+The dev server installs the built extension to SJMCL's installed extension directory (e.g. `~/Library/Application Support/SJMCL/UserContent/Extensions/__IDENTIFIER__/` on macOS). After each successful build it fires a `sjmcl://reload-extension?id=__IDENTIFIER__` deeplink so the launcher picks up the changes immediately.
+
+> [!TIP]
+> The extension must be **manually enabled** in the launcher before it will appear:
+> 1. Open SJMCL and go to **Settings → Extensions**.
+> 2. Find `__IDENTIFIER__` in the list and turn it on.
+> 3. If the extension does not appear, click the **refresh button** at the top of the extension list to reload installed extensions.
 
 ## Build
 
@@ -40,7 +72,7 @@ npm run build -- --obfuscate=off
 npm run build -- --mode development --obfuscate=off
 ```
 
-### Host-Provided Singleton Dependencies
+## Host-Provided Singleton Dependencies
 
 The SJMCL host already provides these dependencies:
 
