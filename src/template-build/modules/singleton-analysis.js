@@ -93,7 +93,9 @@ function getBundledBytesInOutput(metafile, packagePattern) {
   return bytes;
 }
 
-export function warnBundledSingletonDependencies(metafile) {
+export function warnBundledSingletonDependencies(metafile, quiet = false) {
+  if (quiet) return;
+
   const inputs = metafile?.inputs || {};
   const parentMap = getImportParentMap(inputs);
   const warnings = [];

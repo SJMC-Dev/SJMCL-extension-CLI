@@ -16,6 +16,7 @@ import color from "picocolors";
 import semver from "semver";
 import { getCliVersion } from "./banner.js";
 import { renderBuildScriptTemplate } from "./template-build/render-build-script.js";
+import { renderDevScriptTemplate } from "./template-build/render-dev-script.js";
 import { getTemplateProjectPath } from "./template-files.js";
 
 const IDENTIFIER_PATTERN = /^[a-z][a-z0-9_-]*(\.[a-z][a-z0-9_-]*)+$/;
@@ -325,6 +326,10 @@ async function writeGeneratedTemplateFiles(targetDirectory) {
     path.join(targetDirectory, "scripts", "build.mjs"),
     await renderBuildScriptTemplate()
   );
+  writeFileSync(
+    path.join(targetDirectory, "scripts", "dev.mjs"),
+    await renderDevScriptTemplate()
+  );
 }
 
 function printNextSteps(targetDirectory, cwd) {
@@ -344,6 +349,7 @@ function printNextSteps(targetDirectory, cwd) {
     console.log(`  cd ${displayDirectory}`);
   }
   console.log("  npm install");
+  console.log("  npm run dev");
   console.log("  npm run build");
   console.log("  npm run bump -- 0.1.1");
 }

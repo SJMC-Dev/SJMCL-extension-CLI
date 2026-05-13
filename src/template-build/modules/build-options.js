@@ -37,6 +37,9 @@ function createBuildOptionsProgram() {
         .argParser(parseObfuscateValue)
         .default(undefined)
     )
+    .addOption(
+      new Option("--quiet", "Suppress non-error warnings")
+    )
     .allowUnknownOption(false)
     .allowExcessArguments(false)
     .exitOverride();
@@ -60,6 +63,7 @@ export function parseBuildArguments(argv) {
   return {
     mode: options.mode,
     obfuscate: options.obfuscate,
+    quiet: options.quiet ?? false,
   };
 }
 
@@ -70,5 +74,6 @@ export function resolveBuildOptions(argv) {
   return {
     buildMode,
     obfuscate: buildArguments.obfuscate ?? buildMode === "production",
+    quiet: buildArguments.quiet ?? false,
   };
 }

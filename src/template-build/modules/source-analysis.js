@@ -49,7 +49,7 @@ function warnJsxTransform(projectRoot, sourcePath, content) {
   );
 }
 
-function scanSourceWarnings(projectRoot) {
+function scanSourceWarnings(projectRoot, quiet = false) {
   const sourceRoot = path.join(projectRoot, "src");
   if (!existsSync(sourceRoot)) {
     return [];
@@ -64,14 +64,16 @@ function scanSourceWarnings(projectRoot) {
     violations.push(
       ...collectForbiddenPackageImports(projectRoot, sourcePath, importCounts)
     );
-    warnJsxTransform(projectRoot, sourcePath, content);
+    if (!quiet) {
+      warnJsxTransform(projectRoot, sourcePath, content);
+    }
   }
 
   return violations;
 }
 
-export function assertNoDirectSingletonImports(projectRoot) {
-  const violations = scanSourceWarnings(projectRoot);
+export function assertNoDirectSingletonImports(projectRoot, quiet = false) {
+  const violations = scanSourceWarnings(projectRoot, quiet);
 
   if (violations.length === 0) {
     return;
