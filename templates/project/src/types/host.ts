@@ -178,6 +178,22 @@ export interface ExtensionAbilityActions {
    */
   openCustomModal: (key: string, params?: any) => void;
   /**
+   * Updates the title shown in a home widget header.
+   *
+   * Pass only `title` when the current extension declares a single home
+   * widget. Pass both `key` and `title` when multiple home widgets are
+   * registered.
+   *
+   * @since 1.1.0
+   *
+   * @example
+   * host.actions.setHomeWidgetTitle("New Title");
+   * host.actions.setHomeWidgetTitle("New Title", "home-example");
+   *
+   * See: {@link https://mc.sjtu.cn/sjmcl/en/dev/extension/api.html#sethomewidgettitle}
+   */
+  setHomeWidgetTitle: (title: string, key?: string) => void;
+  /**
    * Reads a UTF-8 text file from the extension `data/` directory.
    *
    * @example
