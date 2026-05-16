@@ -26,7 +26,7 @@ Test the generated `.tgz`:
 
 ```bash
 npm exec --yes \
-  --package ./create-sjmcl-extension-0.5.0.tgz \
+  --package ./create-sjmcl-extension-0.6.0.tgz \
   create-sjmcl-extension test
 ```
 
@@ -35,6 +35,7 @@ Then test the generated project:
 ```bash
 cd test
 npm install
+npm run dev
 npm run build
 npm run bump -- 0.1.1
 ```
