@@ -1,5 +1,6 @@
 import { zipSync } from "fflate";
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { addDirectoryToZipTree, copyIfExists, readJson } from "./project-files.js";
 import { assertNoDirectSingletonImports } from "./source-analysis.js";
@@ -45,6 +46,13 @@ export function writeExtensionOutput({
 }) {
   const outputEntry = path.join(outputDirectory, frontendEntry);
 
+  // Preserve runtime data directory across rebuilds
+  const outputDataDir = path.join(outputDirectory, "data");
+  const tempDataBackup = path.join(tmpdir(), `sjmcl-data-${manifest.identifier}`);
+  if (existsSync(outputDataDir)) {
+    cpSync(outputDataDir, tempDataBackup, { recursive: true });
+  }
+
   // clean and recreate output directory
   if (existsSync(outputDirectory)) {
     rmSync(outputDirectory, { recursive: true, force: true });
@@ -83,6 +91,13 @@ export function writeExtensionOutput({
     path.join(projectRoot, "data"),
     path.join(outputDirectory, "data")
   );
+
+  // Restore runtime data on top of seed data from project root
+  if (existsSync(tempDataBackup)) {
+    mkdirSync(outputDataDir, { recursive: true });
+    cpSync(tempDataBackup, outputDataDir, { recursive: true });
+    rmSync(tempDataBackup, { recursive: true, force: true });
+  }
 
   let archivePath;
 
