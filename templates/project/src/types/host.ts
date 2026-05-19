@@ -386,9 +386,14 @@ export interface ExtensionFactoryApi {
    * See: {@link https://mc.sjtu.cn/sjmcl/en/dev/extension/api.html}#api-components
    */
   Components: {
+    Editable: ExtensionComponent;
+    FormattedMCText: ExtensionComponent;
+    MarkdownContainer: ExtensionComponent;
+    MenuSelector: ExtensionComponent;
     OptionItem: ExtensionComponent;
     OptionItemGroup: ExtensionComponent;
     Section: ExtensionComponent;
+    Segmented: ExtensionComponent;
     WrapCard: ExtensionComponent;
     WrapCardGroup: ExtensionComponent;
   };
